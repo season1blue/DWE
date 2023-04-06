@@ -1,0 +1,43 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="JsonStandardCompliance" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredPackages">
+        <value>
+          <list size="13">
+            <item index="0" class="java.lang.String" itemvalue="tqdm" />
+            <item index="1" class="java.lang.String" itemvalue="transformers" />
+            <item index="2" class="java.lang.String" itemvalue="scikit_learn" />
+            <item index="3" class="java.lang.String" itemvalue="numpy" />
+            <item index="4" class="java.lang.String" itemvalue="bert4keras" />
+            <item index="5" class="java.lang.String" itemvalue="cython" />
+            <item index="6" class="java.lang.String" itemvalue="scikit-image" />
+            <item index="7" class="java.lang.String" itemvalue="tokenizers" />
+            <item index="8" class="java.lang.String" itemvalue="mmsegmentation" />
+            <item index="9" class="java.lang.String" itemvalue="timm" />
+            <item index="10" class="java.lang.String" itemvalue="opencv-python" />
+            <item index="11" class="java.lang.String" itemvalue="mmcv-full" />
+            <item index="12" class="java.lang.String" itemvalue="pycocotools" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N806" />
+          <option value="N801" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyTypeCheckerInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="transformers.modeling_bert" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
