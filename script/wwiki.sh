@@ -2,7 +2,7 @@
 
 export DIR_CODE="../nel_model"
 
-export DIR_SEARCH="../../data/wikipedia/search_top50.json"
+export DIR_SEARCH="../../data/wikipedia/search_top100.json"
 export PATH_ANS="../../data/wikipedia/qids_ordered.json"
 export PATH_NEG_CONFIG="../../data/wikipedia/neg.json"
 export DIR_PREPRO="../../data/wikipedia"
@@ -16,8 +16,8 @@ export MODE="train"
 
 export EPOCHS=300  #300
 export LOGGING_STEPS=565
-export SAVE_STEPS=2260 #1000  # 0 represent not save
-export BATCH_SIZE=32
+export SAVE_STEPS=1000 #1000  # 0 represent not save
+export BATCH_SIZE=128
 export MAX_SENT_LENGTH=32
 export DROPOUT=0.4
 export DECAY=0.001
