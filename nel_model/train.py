@@ -24,7 +24,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-from dataset import NELDataset, split_collate_fn, eval_collate_fn
+from dataset import NELDataset, train_collate_fn, eval_collate_fn
 from dataset import person_collate_eval, person_collate_train
 from nel import NELModel
 from metric_topk import cal_top_k, faiss_cal_topk
@@ -77,7 +77,7 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
     else:
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size,
-                                      collate_fn=split_collate_fn)  # 1 iter
+                                      collate_fn=train_collate_fn)  # 1 iter
 
     if args.max_steps > 0:
         t_total = args.max_steps
@@ -190,6 +190,8 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_
                     "mention": batch["mention_feature"].float(),
                     "text": batch["text_feature"].float(),
                     "total": batch["total_feature"].float(),
+                    "segement": batch["segement_feature"].float(),
+                    "profile": batch["profile_feature"].float(),
                     "pos_feats": batch["pos"],
                     "neg_feats": batch["neg"]
                 }
@@ -321,6 +323,8 @@ def evaluate(args, model, nel_model, answer_list, tokenizer, entity_features, mo
                     "mention": batch["mention_feature"].float(),
                     "text": batch["text_feature"].float(),
                     "total": batch["total_feature"].float(),
+                    "segement": batch["segement_feature"].float(),
+                    "profile": batch["profile_feature"].float(),
                     "pos_feats": batch["pos"],
                     "neg_feats": batch["neg"]
                 }
@@ -355,9 +359,9 @@ def evaluate(args, model, nel_model, answer_list, tokenizer, entity_features, mo
     results = {
         # "mean_rank": sum(all_ranks) / len(all_ranks) + 1,
         "top1": int(sum(all_ranks <= 1)) / len(eval_dataset),
-        "top3": int(sum(all_ranks <= 5)) / len(eval_dataset),
-        "top5": int(sum(all_ranks <= 10)) / len(eval_dataset),
-        "top10": int(sum(all_ranks <= 20)) / len(eval_dataset),
+        "top5": int(sum(all_ranks <= 5)) / len(eval_dataset),
+        "top10": int(sum(all_ranks <= 10)) / len(eval_dataset),
+        "top20": int(sum(all_ranks <= 20)) / len(eval_dataset),
         # "top50": int(sum(all_ranks <= 50))/len(eval_dataset),
         # "all": len(all_ranks),
         # "loss": float(eval_loss)

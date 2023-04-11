@@ -27,31 +27,32 @@ from os.path import join, exists
 INAME_PATTERN = re.compile("(\d+)\.")
 
 
-def split_collate_fn(batch):
-    answer_id_list, mention_feature_list, text_feature_list, image_feature_list, total_feature_list, pos_sample_list, neg_sample_list = [], [], [], [], [], [], []
-    entity_feature_list = []
+def train_collate_fn(batch):
+    answer_id_list, mention_feature_list, text_feature_list, segement_feature_list, total_feature_list, profile_feature_list, pos_sample_list, neg_sample_list = [], [], [], [], [], [], [], []
 
     for b in batch:
-        answer_id, mention_feature, text_feature, image_feature, total_feature, pos_sample, neg_sample = b.values()
+        answer_id, mention_feature, text_feature, segement_feature, total_feature, profile_feature, pos_sample, neg_sample = b.values()
         # print(neg_sample.size())
         # exit()
         mention_feature_list.append(mention_feature)
         text_feature_list.append(text_feature)
-        image_feature_list.append(image_feature)
+        segement_feature_list.append(segement_feature)
         total_feature_list.append(total_feature)
+        profile_feature_list.append(profile_feature)
         pos_sample_list.append(pos_sample)
         neg_sample_list.append(neg_sample)
 
-    for i, b in enumerate(batch):
-        neg = None
-        answer_id, mention_feature, text_feature, image_feature, total_feature, pos_sample, neg_sample = b.values()
-        while neg is None:
-            rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
-            if rand != i:
-                neg = pos_sample_list[rand]
-        neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
+    # TODO: in-batch negatives
+    # for i, b in enumerate(batch):
+    #     neg = None
+    #     answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
+    #     while neg is None:
+    #         rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
+    #         if rand != i:
+    #             neg = pos_sample_list[rand]
+    #     neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
 
-    max_size = max([imf.size(0) for imf in image_feature_list])  # img_feature.size == (n, 512)
+    max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
     mention_feature = torch.stack(mention_feature_list)
     total_feature = torch.stack(total_feature_list)
@@ -59,46 +60,54 @@ def split_collate_fn(batch):
     pos_sample = torch.stack(pos_sample_list)
     neg_sample = torch.stack(neg_sample_list)
 
+    for imf_index in range(len(segement_feature_list)):
+        while segement_feature_list[imf_index].size(0) < max_size:
+            segement_feature_list[imf_index] = torch.nn.functional.pad(segement_feature_list[imf_index], pad=(0, 0, 0, 1),
+                                                                       mode='constant', value=0)
+            profile_feature_list[imf_index] = torch.nn.functional.pad(profile_feature_list[imf_index], pad=(0, 0, 0, 1),
+                                                                      mode='constant', value=0)
 
-    for imf_index in range(len(image_feature_list)):
-        while image_feature_list[imf_index].size(0) < max_size:
-            image_feature_list[imf_index] = torch.nn.functional.pad(image_feature_list[imf_index], pad=(0, 0, 0, 1),
-                                                                    mode='constant', value=0)
-    image_feature = torch.stack(image_feature_list)
+    segement_feature = torch.stack(segement_feature_list)
+    profile_feature = torch.stack(profile_feature_list)
 
     return {
         "mention_feature": mention_feature,
         "text_feature": text_feature,
+        "total_feature": total_feature,
+        "segement_feature": segement_feature,
+        "profile_feature": profile_feature,
         "pos": pos_sample,
         "neg": neg_sample,
-        "image_feature": image_feature,
-        "total_feature": total_feature,
     }
 
 
 def eval_collate_fn(batch):
-    answer_id_list, mention_feature_list, text_feature_list, image_feature_list, total_feature_list, pos_sample_list, neg_sample_list, search_res_list = [], [], [], [], [], [], [], []
-    entity_feature_list = []
+    answer_id_list, mention_feature_list, text_feature_list, segement_feature_list, total_feature_list, profile_feature_list, pos_sample_list, neg_sample_list, search_res_list = [], [], [], [], [], [], [], [], []
 
     for b in batch:
-        answer_id, mention_feature, text_feature, image_feature, total_feature, pos_sample, neg_sample, search_res = b.values()
+        answer_id, mention_feature, text_feature, segement_feature, total_feature, profile_feature, pos_sample, neg_sample, search_res = b.values()
+        # print(neg_sample.size())
+        # exit()
         mention_feature_list.append(mention_feature)
         text_feature_list.append(text_feature)
-        image_feature_list.append(image_feature)
+        segement_feature_list.append(segement_feature)
         total_feature_list.append(total_feature)
+        profile_feature_list.append(profile_feature)
         pos_sample_list.append(pos_sample)
         neg_sample_list.append(neg_sample)
         search_res_list.append(search_res)
 
+    # TODO: in-batch negatives
     # for i, b in enumerate(batch):
     #     neg = None
+    #     answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
     #     while neg is None:
     #         rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
     #         if rand != i:
     #             neg = pos_sample_list[rand]
-    #     neg_sample_list.append(neg)
+    #     neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
 
-    max_size = max([imf.size(0) for imf in image_feature_list])  # img_feature.size == (n, 512)
+    max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
     mention_feature = torch.stack(mention_feature_list)
     total_feature = torch.stack(total_feature_list)
@@ -107,24 +116,154 @@ def eval_collate_fn(batch):
     neg_sample = torch.stack(neg_sample_list)
     search_res = torch.stack(search_res_list)
 
+    for imf_index in range(len(segement_feature_list)):
+        while segement_feature_list[imf_index].size(0) < max_size:
+            segement_feature_list[imf_index] = torch.nn.functional.pad(segement_feature_list[imf_index],
+                                                                       pad=(0, 0, 0, 1),
+                                                                       mode='constant', value=0)
+            profile_feature_list[imf_index] = torch.nn.functional.pad(profile_feature_list[imf_index], pad=(0, 0, 0, 1),
+                                                                      mode='constant', value=0)
 
-
-    for imf_index in range(len(image_feature_list)):
-        while image_feature_list[imf_index].size(0) < max_size:
-            image_feature_list[imf_index] = torch.nn.functional.pad(image_feature_list[imf_index], pad=(0, 0, 0, 1),
-                                                                    mode='constant', value=0)
-    image_feature = torch.stack(image_feature_list)
+    segement_feature = torch.stack(segement_feature_list)
+    profile_feature = torch.stack(profile_feature_list)
 
     return {
         "mention_feature": mention_feature,
         "text_feature": text_feature,
+        "total_feature": total_feature,
+        "segement_feature": segement_feature,
+        "profile_feature": profile_feature,
         "pos": pos_sample,
         "neg": neg_sample,
-        "image_feature": image_feature,
-        "total_feature": total_feature,
         "search_res": search_res,
     }
 
+
+
+
+def neg_sample_online(neg_id, neg_iid, tfidf_neg, negid2qid, max_sample_num=1, threshold=0.95):
+    """
+        Online negative sampling algorithm
+        ------------------------------------------
+        Args:
+        Returns:
+    """
+    N = len(tfidf_neg)
+    cands = set()
+
+    while len(cands) < max_sample_num:
+        rand = random.random()
+        # print("neg id", neg_id, tfidf_neg[neg_id])
+        if not tfidf_neg[neg_id] or rand > threshold:
+            cand = random.randint(0, N - 1)
+        else:
+            rand_word = random.choice(tfidf_neg[neg_id])
+            cand = random.choice(neg_iid[rand_word])
+            # print("tfidf", tfidf_neg[neg_id])
+            # print("randword", rand_word)
+            # print("negidd", neg_iid[rand_word])
+
+        if cand != neg_id:
+            cands.add(cand)
+
+    return [negid2qid[c] for c in cands]
+
+
+def neg_sample(entity_list, pos_id, max_sample_num):
+    candidate = set()
+    while len(candidate) < max_sample_num:
+        rand = random.randint(0, len(entity_list) - 1)  # randint [0,x] 闭区间
+        if rand != pos_id:
+            candidate.add(rand)
+    return list(candidate)
+
+
+def search_res(entity_list, pos_id, max_sample_num=1000):
+    candidate = random.sample(range(0, len(entity_list) - 1), max_sample_num)
+    candidate = [pos_id] + candidate
+    return candidate
+
+
+class NELDataset(Dataset):
+    def __init__(self, args,
+                 all_answer_id,
+                 all_mentions,
+                 all_img_id,
+                 all_key_id,
+                 all_mention_feature,
+                 all_text_feature,
+                 all_total_feature,
+                 all_segement_feature,
+                 all_profile_feature,
+                 answer_list,
+                 contain_search_res=False):
+        # text info
+        self.all_answer_id = all_answer_id
+        self.all_img_id = all_img_id
+        self.all_mentions = all_mentions
+        self.all_mention_feature = all_mention_feature
+        # answer
+        self.answer_list = answer_list  # id2ansStr #qids_ordered.json
+        self.answer_mapping = {answer: i for i, answer in enumerate(self.answer_list)}  # ansStr2id
+
+        # Online negative sampling
+        self.max_sample_num = args.neg_sample_num
+        neg_config = json.load(open(args.path_neg_config))
+        self.neg_iid = neg_config["neg_iid"]
+        self.tfidf_neg = neg_config["tfidf_neg"]
+        self.negid2qid = neg_config["keys_ordered"]
+        self.qid2negid = {qid: i for i, qid in enumerate(neg_config["keys_ordered"])}
+
+        # Sample features of negative sampling
+        self.neg_list = json.load(open(join(args.dir_neg_feat, "qids_ordered.json")))  # len = 25846
+        self.neg_mapping = {sample: i for i, sample in enumerate(self.neg_list)}
+        self.ansid2negid = {i: self.neg_mapping[ans] for i, ans in enumerate(self.answer_list)}
+
+        gt_name = "gt_feats_{}.h5".format(args.gt_type)
+        entity_feat = h5py.File(join(args.dir_neg_feat, gt_name), 'r')
+        self.entity_features = entity_feat.get("features")
+
+        # search candidates
+        self.contain_search_res = contain_search_res
+        if self.contain_search_res:
+            self.search_res = json.load(
+                open(args.path_candidates, "r", encoding='utf8'))  # mention: [qid0, qid1, ..., qidn]
+
+        self.all_text_features = all_text_feature
+        self.all_total_features = all_total_feature
+        self.all_segement_features = all_segement_feature
+        self.all_profile_features = all_profile_feature
+
+    def __len__(self):
+        return len(self.all_answer_id)
+
+    def __getitem__(self, idx):
+        sample = dict()
+        sample["answer_id"] = self.all_answer_id[idx]
+        sample["mention_feature"] = self.all_mention_feature[idx]
+        sample["text_feature"] = self.all_text_features[idx]
+        sample['segement_feature'] = self.all_segement_features[idx]
+        sample['total_feature'] = self.all_total_features[idx]
+        sample['profile_feature'] = self.all_profile_features[idx]
+
+        ans_id = self.all_answer_id[idx]
+        if ans_id == "c":
+            ans_id = "Q5729149"
+        pos_sample_id = self.neg_mapping[ans_id]
+        neg_ids = neg_sample_online(self.qid2negid[ans_id], self.neg_iid, self.tfidf_neg, self.negid2qid,
+                                    self.max_sample_num)
+        neg_ids_map = [self.neg_mapping[nid] for nid in neg_ids]
+
+        sample["pos_sample"] = torch.tensor(np.array([self.entity_features[pos_sample_id]]))
+        sample["neg_sample"] = torch.tensor(np.array([self.entity_features[nim] for nim in neg_ids_map]))
+
+        # return search results
+        if self.contain_search_res:
+            qids_searched = self.search_res[self.all_mentions[idx]]
+            qids_searched_map = [self.neg_mapping[qid] for qid in qids_searched]
+            sample["search_res"] = torch.tensor(np.array([self.entity_features[qsm] for qsm in qids_searched_map]))
+            # print(sample["search_res"].size())  #Bathc_size*hidden_size 32*768
+        return sample
 
 def person_collate_train(batch):
     image_feature_list, detection_list, pos_list, neg_list = [], [], [], []
@@ -203,128 +342,6 @@ def person_collate_eval(batch):
         "neg": neg,
         "search_res": candidate
     }
-
-
-def neg_sample_online(neg_id, neg_iid, tfidf_neg, negid2qid, max_sample_num=1, threshold=0.95):
-    """
-        Online negative sampling algorithm
-        ------------------------------------------
-        Args:
-        Returns:
-    """
-    N = len(tfidf_neg)
-    cands = set()
-
-    while len(cands) < max_sample_num:
-        rand = random.random()
-        # print("neg id", neg_id, tfidf_neg[neg_id])
-        if not tfidf_neg[neg_id] or rand > threshold:
-            cand = random.randint(0, N - 1)
-        else:
-            rand_word = random.choice(tfidf_neg[neg_id])
-            cand = random.choice(neg_iid[rand_word])
-            # print("tfidf", tfidf_neg[neg_id])
-            # print("randword", rand_word)
-            # print("negidd", neg_iid[rand_word])
-
-        if cand != neg_id:
-            cands.add(cand)
-
-    return [negid2qid[c] for c in cands]
-
-
-def neg_sample(entity_list, pos_id, max_sample_num):
-    candidate = set()
-    while len(candidate) < max_sample_num:
-        rand = random.randint(0, len(entity_list) - 1)  # randint [0,x] 闭区间
-        if rand != pos_id:
-            candidate.add(rand)
-    return list(candidate)
-
-
-def search_res(entity_list, pos_id, max_sample_num=1000):
-    candidate = random.sample(range(0, len(entity_list) - 1), max_sample_num)
-    candidate = [pos_id] + candidate
-    return candidate
-
-
-class NELDataset(Dataset):
-    def __init__(self, args,
-                 all_answer_id,
-                 all_mentions,
-                 all_img_id,
-                 all_key_id,
-                 all_mention_feature,
-                 all_text_feature,
-                 all_image_feature,
-                 all_total_image_feature,
-                 answer_list,
-                 contain_search_res=False):
-        # text info
-        self.all_answer_id = all_answer_id
-        self.all_img_id = all_img_id
-        self.all_mentions = all_mentions
-        self.all_mention_feature = all_mention_feature
-        # answer
-        self.answer_list = answer_list  # id2ansStr #qids_ordered.json
-        self.answer_mapping = {answer: i for i, answer in enumerate(self.answer_list)}  # ansStr2id
-
-        # Online negative sampling
-        self.max_sample_num = args.neg_sample_num
-        neg_config = json.load(open(args.path_neg_config))
-        self.neg_iid = neg_config["neg_iid"]
-        self.tfidf_neg = neg_config["tfidf_neg"]
-        self.negid2qid = neg_config["keys_ordered"]
-        self.qid2negid = {qid: i for i, qid in enumerate(neg_config["keys_ordered"])}
-
-        # Sample features of negative sampling
-        self.neg_list = json.load(open(join(args.dir_neg_feat, "qids_ordered.json")))  # len = 25846
-        self.neg_mapping = {sample: i for i, sample in enumerate(self.neg_list)}
-        self.ansid2negid = {i: self.neg_mapping[ans] for i, ans in enumerate(self.answer_list)}
-
-        gt_name = "gt_feats_{}.h5".format(args.gt_type)
-        entity_feat = h5py.File(join(args.dir_neg_feat, gt_name), 'r')
-        self.entity_features = entity_feat.get("features")
-
-        # search candidates
-        self.contain_search_res = contain_search_res
-        if self.contain_search_res:
-            self.search_res = json.load(
-                open(args.path_candidates, "r", encoding='utf8'))  # mention: [qid0, qid1, ..., qidn]
-
-        self.all_text_features = all_text_feature
-        self.all_image_features = all_image_feature
-        self.all_total_image_features = all_total_image_feature
-
-    def __len__(self):
-        return len(self.all_answer_id)
-
-    def __getitem__(self, idx):
-        sample = dict()
-        sample["answer_id"] = self.all_answer_id[idx]
-        sample["mention_feature"] = self.all_mention_feature[idx]
-        sample["text_feature"] = self.all_text_features[idx]
-        sample['image_feature'] = self.all_image_features[idx]
-        sample['total_feature'] = self.all_total_image_features[idx]
-
-        ans_id = self.all_answer_id[idx]
-        if ans_id == "c":
-            ans_id = "Q5729149"
-        pos_sample_id = self.neg_mapping[ans_id]
-        neg_ids = neg_sample_online(self.qid2negid[ans_id], self.neg_iid, self.tfidf_neg, self.negid2qid,
-                                    self.max_sample_num)
-        neg_ids_map = [self.neg_mapping[nid] for nid in neg_ids]
-
-        sample["pos_sample"] = torch.tensor(np.array([self.entity_features[pos_sample_id]]))
-        sample["neg_sample"] = torch.tensor(np.array([self.entity_features[nim] for nim in neg_ids_map]))
-
-        # return search results
-        if self.contain_search_res:
-            qids_searched = self.search_res[self.all_mentions[idx]]
-            qids_searched_map = [self.neg_mapping[qid] for qid in qids_searched]
-            sample["search_res"] = torch.tensor(np.array([self.entity_features[qsm] for qsm in qids_searched_map]))
-            # print(sample["search_res"].size())  #Bathc_size*hidden_size 32*768
-        return sample
 
 
 class PersonDataset(Dataset):
@@ -436,9 +453,10 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
         dataset = PersonDataset(args, all_img_id, all_answer_id, all_image_feature, contain_search_res)
     else:
         all_text_feature = [f.text_feature for f in features]
-        all_image_feature = [f.image_feature for f in features]
         all_mention_feature = [f.mention_feature for f in features]
-        all_total_image_feature = [f.total_image_feature for f in features]
+        all_total_feature = [f.total_feature for f in features]
+        all_segement_feature = [f.segement_feature for f in features]
+        all_profile_feature = [f.profile_feature for f in features]
 
         all_answer_id = [f.answer_id for f in features]
         all_img_id = [f.img_id for f in features]
@@ -452,8 +470,9 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
                              all_key_id,
                              all_mention_feature,
                              all_text_feature,
-                             all_image_feature,
-                             all_total_image_feature,
+                             all_total_feature,
+                             all_segement_feature,
+                             all_profile_feature,
                              answer_list,
                              contain_search_res)
     return dataset, guks

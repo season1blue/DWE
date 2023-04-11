@@ -14,7 +14,6 @@ import warnings
 from args import parse_arg
 
 
-
 class InputExample(object):
     """A single training/test example for token classification."""
 
@@ -31,25 +30,17 @@ class InputExample(object):
 
 
 class InputFeatures:
-    """A single training/test example for token classification."""
-
-    def __init__(self, answer_id, img_id, mentions, key_id, text_feature, image_feature, mention_feature,
-                 total_image_feature):
-        """Constructs a InputExample.
-        Args:
-            guid: Unique id for the example.
-            words: list. The words of the sequence.
-            labels: (Optional) list. The labels for the sequence. This should be
-            specified for train and dev examples, but not for test examples.
-        """
+    def __init__(self, answer_id, img_id, mentions, key_id, text_feature, mention_feature, total_feature,
+                 segement_feature, profile_feature):
         self.answer_id = answer_id
         self.img_id = img_id
         self.mentions = mentions
         self.key_id = key_id
         self.text_feature = text_feature
-        self.image_feature = image_feature
         self.mention_feature = mention_feature
-        self.total_image_feature = total_image_feature
+        self.total_feature = total_feature
+        self.segement_feature = segement_feature
+        self.profile_feature = profile_feature
 
 
 class Wikipedia():
@@ -72,6 +63,9 @@ class Wikipedia():
         self.ins = instanceSegmentation()
         self.ins.load_model(args.seg_model_path)
         self.target_classes = self.ins.select_target_classes(person=True)
+        self.detection_path = os.path.join(args.dir_prepro, "wiki_detection")
+        self.segement_path = os.path.join(args.dir_prepro, "wiki_segement")
+        self.total2part_map = json.load(open(os.path.join(args.dir_prepro, "total2part_map.json"), 'r'))
 
     def read_examples_from_file(self, data_dir, mode):
         file_path = os.path.join(data_dir, "{}.json".format(mode))
@@ -116,37 +110,48 @@ class Wikipedia():
     def convert_examples_to_features(self, examples):
         features = []
         for (ex_index, example) in tqdm(enumerate(examples), total=len(examples), ncols=80):
-            img_path = os.path.join(self.img_path, example.img_path)
-            input_sent = example.mentions + " [SEP] " + example.sent
-            sent_ids, _ = clip_tokenize(input_sent, truncate=True)  # 截断过长的
-            sent_ids = sent_ids.to(self.device)
-            mention, _ = clip_tokenize(example.mentions, truncate=True)
-            mention = mention.to(self.device)
-
-            image_features = []
+            self.model.to(self.device)
+            img_id = example.img_path.split("/")[-1].split(".")[0]
             with torch.no_grad():
-                self.model.to(self.device)
+                input_sent = example.mentions + " [SEP] " + example.sent
+                sent_ids = clip_tokenize(input_sent, truncate=True).to(self.device)  # 截断过长的
+                mention = clip_tokenize(example.mentions, truncate=True).to(self.device)
+
                 text_feature = self.model.encode_text(sent_ids)  # text_features 1,512
                 mention_feature = self.model.encode_text(mention)
 
                 # extract image feature (split or single)
-                split_list = self.split_image(img_path)
-                if len(split_list) > 0:
-                    for split in split_list:
-                        split_feature = self.model.encode_image(split).to(self.device)
-                        image_features.append(split_feature)
-                    image_features = torch.cat(image_features, dim=0)
-                else:
-                    split_single_image = self.preprocess(Image.open(img_path)).unsqueeze(0).to(self.device)
-                    image_features = self.model.encode_image(split_single_image)
+                img_path = os.path.join(self.img_path, example.img_path)
 
                 total_image = self.preprocess(Image.open(img_path)).unsqueeze(0).to(self.device)
-                total_image_feature = self.model.encode_image(total_image)
+                total_feature = self.model.encode_image(total_image)
 
-            if example.answer:
-                answer_id = example.answer
-            else:
-                answer_id = -1
+                if img_id not in self.total2part_map:
+                    segement_features = torch.zeros_like(text_feature)
+                    profile_features = torch.zeros_like(text_feature)
+                else:
+                    segement_list, profile_list = [], []
+                    for part in self.total2part_map[img_id]:
+                        # segement image feature extraction
+                        segement_path = os.path.join(self.segement_path, part + ".jpg")
+                        segement = self.preprocess(Image.open(segement_path)).unsqueeze(0).to(self.device)
+                        segement_feature = self.model.encode_image(segement)
+                        segement_list.append(segement_feature)
+
+                        # detection profile feature extraction
+                        detection_path = os.path.join(self.detection_path, part + ".json")
+                        detection_context = json.load(open(detection_path, 'r'))[0]
+                        gender, race, age, emotion = detection_context['dominant_gender'], detection_context[
+                            'dominant_race'], detection_context['age'], detection_context['dominant_emotion']
+                        profile = "gender: {}, race: {}, age: {}, emotion: {}".format(gender, race, age, emotion)
+                        profile = clip_tokenize(profile, truncate=True).to(self.device)
+                        profile_feature = self.model.encode_text(profile)
+                        profile_list.append(profile_feature)
+
+                    segement_features = torch.cat(segement_list, dim=0)
+                    profile_features = torch.cat(profile_list, dim=0)
+
+            answer_id = example.answer if example.answer else -1
 
             features.append(
                 InputFeatures(
@@ -155,9 +160,10 @@ class Wikipedia():
                     mentions=example.mentions,
                     key_id=example.guk,
                     text_feature=text_feature,
-                    image_feature=image_features,
                     mention_feature=mention_feature,
-                    total_image_feature=total_image_feature
+                    total_feature=total_feature,
+                    segement_feature=segement_features,
+                    profile_feature=profile_features,
                 )
             )
         return features

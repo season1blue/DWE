@@ -236,4 +236,4 @@ def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: b
         result[i, :len(tokens)] = torch.tensor(tokens)
         mask[i,:len(tokens)] = torch.tensor([1]*len(tokens))
 
-    return result, mask
+    return result

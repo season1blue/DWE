@@ -35,6 +35,31 @@ def Contrastive_loss(out_1, out_2, batch_size, temperature=0.5):
     loss = (- torch.log(pos_sim / (sim_matrix.sum(dim=-1) - pos_sim))).mean()
     return loss
 
+class ClipLoss(nn.Module):
+    def __init__(self, args):
+        super(ClipLoss, self).__init__()
+        self.device = args.device
+
+        self.loss_img = nn.CrossEntropyLoss()
+        self.loss_txt = nn.CrossEntropyLoss()
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+
+    def forward(self, image_features, text_features, batch_size):
+        image_features = image_features.squeeze(1)
+        text_features = text_features.squeeze(1)
+
+        logit_scale = self.logit_scale.exp()
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
+
+        # cosine similarity as logits
+        logits_per_image = logit_scale * image_features @ text_features.t()
+        logits_per_text = logits_per_image.t()
+
+        ground_truth = torch.arange(batch_size, dtype=torch.long, device=self.device)
+        total_loss = (self.loss_img(logits_per_image, ground_truth) + self.loss_txt(logits_per_text, ground_truth)) / 2
+
+        return total_loss
 
 
 class NELModel(nn.Module):
@@ -76,7 +101,7 @@ class NELModel(nn.Module):
         # Dimension reduction
         self.pedia_out_trans = nn.Sequential(
             nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size * 3, self.output_size),
+            nn.Linear(self.hidden_size * 4, self.output_size),
         )
         self.img_att = nn.MultiheadAttention(self.hidden_size, args.nheaders, batch_first=True)
 
@@ -91,9 +116,10 @@ class NELModel(nn.Module):
             # self.loss_p = args.loss_p
             # self.loss = TripletMarginLoss(margin=self.loss_margin, p=self.loss_p)
             self.loss = NpairLoss(args)
+            self.clip_loss = ClipLoss(args)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
-    def forward(self, model_type, mention=None, text=None, total=None, detection=None, pos_feats=None, neg_feats=None):
+    def forward(self, model_type, mention=None, text=None, total=None, segement=None, profile=None, pos_feats=None, neg_feats=None):
         """
             ------------------------------------------
             Args:
@@ -107,19 +133,36 @@ class NELModel(nn.Module):
 
         # pos_feats = self.entity_trans(pos_feats)
         # neg_feats = self.entity_trans(neg_feats)
+        batch_size = mention.size(0)
 
         mention_trans = self.text_trans(mention)
-        bert_trans = self.text_trans(text)
+        text_trans = self.text_trans(text)
+        profile_trans = self.text_trans(profile).max(dim=1)[0].unsqueeze(1)
+        segement_trans = self.img_trans(segement)
         total_trans = self.img_trans(total)
 
-        query = torch.cat([bert_trans, total_trans, mention_trans], dim=-1)
-        query = self.pedia_out_trans(query)
-        query = query.squeeze(1)
+        segement_att, _ = self.img_att(mention_trans, segement_trans, segement_trans)
+        profile_att, _ = self.img_att(mention_trans, profile_trans, profile_trans)
+
+        query = torch.cat([text_trans, total_trans, mention_trans, profile_att], dim=-1)
+        query = self.pedia_out_trans(query).squeeze(1)
+
+        coarsegraied_loss = self.clip_loss(total_trans, text_trans, batch_size)
+        finegraied_loss = self.clip_loss(mention_trans, segement_att, batch_size)
+        # ct_mention_feats = nn.functional.normalize(mention_trans.squeeze(1), dim=-1)
+        # ct_segement_feats = nn.functional.normalize(segement_att.squeeze(1), dim=-1)
+        # ct_text_feats = nn.functional.normalize(text_trans.squeeze(1), dim=-1)
+        # ct_total_feats = nn.functional.normalize(total.squeeze(1), dim=-1)
+
+        # ct_local_loss = Contrastive_loss(ct_mention_feats, ct_segement_feats, batch_size=batch_size, temperature=0.6)
+        # ct_loss = Contrastive_loss(ct_text_feats, ct_total_feats, batch_size=batch_size, temperature=0.6)
 
         # 注意这里的维度，如果不满足TripletMarginLoss的维度设置，会存在broadcast现象，导致性能大幅下降 全都要是 [bsz*hs]
         triplet_loss = self.loss(query, pos_feats.squeeze(1), neg_feats.squeeze(1))
 
-        return triplet_loss, query
+        loss = triplet_loss + coarsegraied_loss
+
+        return loss, query
 
     def trans(self, x):
         return x

@@ -1,6 +1,6 @@
 import pixellib
 from pixellib.torchbackend.instance import instanceSegmentation
-# from deepface import DeepFace
+from deepface import DeepFace
 import json
 import os
 import sys
@@ -16,12 +16,20 @@ target_classes = ins.select_target_classes(person=True)
 
 img_list = os.listdir(imgData_path)
 
+seg_out_path = os.path.join(output_path, "wiki_segement")
+exist_files =os.listdir(seg_out_path)
+
 for img_name in tqdm(img_list):
     img_id = img_name.split(".")[0]
     img_path = os.path.join(imgData_path, img_name)
-    seg_out_path = os.path.join(output_path, "wiki_segement")
-    r, output = ins.segmentImage(img_name, show_bboxes=True, extract_segmented_objects=True,
-                                 segment_target_classes=target_classes, save_extracted_objects=True, output_image_name=None, output_path=seg_out_path)
+
+    if str(img_id)+'_1.jpg' in exist_files:
+        continue
+    try:
+        r, output = ins.segmentImage(img_path, show_bboxes=True, extract_segmented_objects=True,
+                                 segment_target_classes=target_classes, save_extracted_objects=True, output_image_name=None, output_path=seg_out_path, img_id=img_id)
+    except:
+        print("Exception ", img_id)
     # print(r['extracted_objects'])
     # print(r["object_counts"])
 

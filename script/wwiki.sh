@@ -16,7 +16,7 @@ export MODE="train"
 
 export EPOCHS=300  #300
 export LOGGING_STEPS=565
-export SAVE_STEPS=1000 #1000  # 0 represent not save
+export SAVE_STEPS=500 #1000  # 0 represent not save
 export BATCH_SIZE=128
 export MAX_SENT_LENGTH=32
 export DROPOUT=0.4

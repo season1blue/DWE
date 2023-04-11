@@ -379,9 +379,6 @@ class CLIP(nn.Module):
         image_features = self.encode_image(image)
         text_features = self.encode_text(text)
         # text_features = self.fusion_text(text, vis)
-        print(image_features.size())
-        print(text_features.size())
-
 
         # normalized features
         image_features = image_features / image_features.norm(dim=1, keepdim=True)
