@@ -67,7 +67,7 @@ def set_seed(args):
         torch.cuda.manual_seed_all(args.seed)
 
 
-def train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_features, fold=""):
+def train(args, train_dataset, model, nel_model, answer_list, tokenizer, fold=""):
     if args.local_rank in [-1, 0]:
         tb_writer = SummaryWriter()
 
@@ -240,7 +240,7 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_
                     # Log metrics
                     if args.local_rank == -1 and args.evaluate_during_training:
                         # logger.info(f"\n******** Evaluation ********", )
-                        results, _ = evaluate(args, model, nel_model, answer_list, tokenizer, entity_features, mode=f"dev{fold}")[:2]
+                        results, _ = evaluate(args, model, nel_model, answer_list, tokenizer, mode=f"dev{fold}")[:2]
                         show_result = list(results.values())
                         if show_result[0] > best_result[0]:
                             best_result = show_result
@@ -275,7 +275,7 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_
     return global_step, tr_loss / global_step
 
 
-def evaluate(args, model, nel_model, answer_list, tokenizer, entity_features, mode, prefix=""):
+def evaluate(args, model, nel_model, answer_list, tokenizer, mode, prefix=""):
     time_eval_beg = time()
 
     eval_dataset, guks = load_and_cache_examples(args, tokenizer, answer_list, mode=mode, dataset=args.dataset,
@@ -341,11 +341,7 @@ def evaluate(args, model, nel_model, answer_list, tokenizer, entity_features, mo
             pos_feat_trans = nel_model.trans(batch["pos"])
             neg_feat_trans = nel_model.trans(batch["search_res"])
 
-            test_method = "partial"
-            if test_method == "partial":
-                rank_list, sim_p, sim_n = cal_top_k(args, query, pos_feat_trans, neg_feat_trans)
-            else:
-                rank_list = faiss_cal_topk(args, query, answer, entity_features)
+            rank_list, sim_p, sim_n = cal_top_k(args, query, pos_feat_trans, neg_feat_trans)
 
             all_ranks.extend(rank_list)
 
@@ -418,8 +414,6 @@ def main():
     answer_list = json.load(open(args.path_ans_list))
     args.model_type = args.model_type.lower()
 
-    entity_features = load_entity(args)
-
     tokenizer_args = {k: v for k, v in vars(args).items() if v is not None and k in TOKENIZER_ARGS}
 
     if args.do_cross and (args.do_train or args.do_eval or args.do_predict):
@@ -464,7 +458,7 @@ def main():
 
         train_dataset, _ = load_and_cache_examples(args, tokenizer, answer_list, mode="train", dataset=args.dataset,
                                                    logger=logger)
-        global_step, tr_loss = train(args, train_dataset, model, nel_model, answer_list, tokenizer, entity_features)
+        global_step, tr_loss = train(args, train_dataset, model, nel_model, answer_list, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
 

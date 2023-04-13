@@ -63,7 +63,8 @@ def train_collate_fn(batch):
 
     for imf_index in range(len(segement_feature_list)):
         while segement_feature_list[imf_index].size(0) < max_size:
-            segement_feature_list[imf_index] = torch.nn.functional.pad(segement_feature_list[imf_index], pad=(0, 0, 0, 1),
+            segement_feature_list[imf_index] = torch.nn.functional.pad(segement_feature_list[imf_index],
+                                                                       pad=(0, 0, 0, 1),
                                                                        mode='constant', value=0)
             profile_feature_list[imf_index] = torch.nn.functional.pad(profile_feature_list[imf_index], pad=(0, 0, 0, 1),
                                                                       mode='constant', value=0)
@@ -138,8 +139,6 @@ def eval_collate_fn(batch):
         "neg": neg_sample,
         "search_res": search_res,
     }
-
-
 
 
 def neg_sample_online(neg_id, neg_iid, tfidf_neg, negid2qid, max_sample_num=1, threshold=0.95):
@@ -267,16 +266,6 @@ class NELDataset(Dataset):
         return sample
 
 
-
-
-
-
-
-
-
-
-
-
 def person_collate_train(batch):
     image_feature_list, detection_list, pos_list, neg_list = [], [], [], []
     answer_list = []
@@ -356,6 +345,59 @@ def person_collate_eval(batch):
     }
 
 
+class DiverseDataset(Dataset):
+    def __init__(self, args, guks, all_text_feature, all_mention_feature, all_total_feature, all_answer_id,
+                 contain_search_res):
+        self.args = args
+        self.guks = guks
+        self.all_answer_id = all_answer_id
+        self.all_text_feature = all_text_feature
+        self.all_mention_feature = all_mention_feature
+        self.all_total_feature = all_total_feature
+        self.max_sample_num = args.neg_sample_num
+
+        self.entity_list = json.load(open(join(args.dir_neg_feat, "entity_list.json")))  # len = 25846
+        self.entity_id_mapping = {sample: i for i, sample in enumerate(self.entity_list)}
+
+        # profile_path = os.path.join(args.dir_neg_feat, "profile.h5")
+        # self.profile = h5py.File(profile_path, 'r').get("features")
+
+        entity_feat = h5py.File(join(args.dir_neg_feat, "gt_feats_brief.h5"), 'r')
+        self.entity_features = entity_feat.get("features")
+
+        self.contain_search_res = contain_search_res
+        self.neg_sample_list = json.load(open(args.path_candidates, "r", encoding='utf8'))
+
+    def __len__(self):
+        return len(self.all_answer_id)
+
+    def __getitem__(self, idx):
+        sample = dict()
+
+        print(self.guks[idx])
+        print(idx)
+        ans_qid = self.all_answer_id[idx]  # Q3290309
+        pos_sample_id = self.entity_id_mapping[ans_qid]  # 46729
+        neg_sample_qids = self.neg_sample_list[ans_qid][:min(len(self.neg_sample_list[ans_qid]),
+                                                             self.max_sample_num)]  # ['Q12586851', 'Q2929059', 'Q4720236', 'Q19958130'
+        neg_sample_ids = [self.entity_id_mapping[qids] for qids in
+                          neg_sample_qids]  # [46729, 25088, 32776, 116770, 96808.. ] 100
+
+        sample["answer_id"] = self.entity_id_mapping[self.all_answer_id[idx]]
+        sample['image_feature'] = self.all_total_feature[idx]
+        sample['text_feature'] = self.all_text_feature[idx]
+        sample['mention_feature'] = self.all_mention_feature[idx]
+
+        sample["pos"] = torch.tensor(np.array([self.entity_features[pos_sample_id]]))
+        sample["neg"] = torch.tensor(np.array([self.entity_features[nim] for nim in neg_sample_ids]))
+
+        if self.contain_search_res:
+            qids_searched = self.neg_sample_list[ans_qid]
+            qids_searched_map = [pos_sample_id] + [self.entity_id_mapping[qid] for qid in qids_searched]
+            sample["search_res"] = torch.tensor(np.array([self.entity_features[qsm] for qsm in qids_searched_map]))
+        return sample
+
+
 class PersonDataset(Dataset):
     def __init__(self, args, all_img_id, all_answer_id, all_image_feature, contain_search_res):
         self.args = args
@@ -400,8 +442,10 @@ class PersonDataset(Dataset):
         img_id = self.all_img_id[idx]
         ans_qid = self.all_answer_id[idx]  # Q3290309
         pos_sample_id = self.entity_id_mapping[ans_qid]  # 46729
-        neg_sample_qids = self.neg_sample_list[ans_qid][:min(len(self.neg_sample_list[ans_qid]), self.max_sample_num)] #['Q12586851', 'Q2929059', 'Q4720236', 'Q19958130'
-        neg_sample_ids = [self.entity_id_mapping[qids] for qids in neg_sample_qids]  # [46729, 25088, 32776, 116770, 96808.. ] 100
+        neg_sample_qids = self.neg_sample_list[ans_qid][:min(len(self.neg_sample_list[ans_qid]),
+                                                             self.max_sample_num)]  # ['Q12586851', 'Q2929059', 'Q4720236', 'Q19958130'
+        neg_sample_ids = [self.entity_id_mapping[qids] for qids in
+                          neg_sample_qids]  # [46729, 25088, 32776, 116770, 96808.. ] 100
 
         sample["answer_id"] = self.entity_mapping[self.all_answer_id[idx]]
         sample['image_feature'] = self.all_image_features[idx]
@@ -418,7 +462,6 @@ class PersonDataset(Dataset):
 
             sample["pos"] = pos_textual_feature + pos_visual_feature
             sample["neg"] = neg_textual_feature + neg_visual_feature
-
 
         if self.contain_search_res:
             qids_searched = self.neg_sample_list[ans_qid]
@@ -468,6 +511,15 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
         all_answer_id = [f.answer for f in features]
         all_image_feature = [f.image_feature for f in features]
         dataset = PersonDataset(args, all_img_id, all_answer_id, all_image_feature, contain_search_res)
+    elif args.dataset == "diverse":
+        all_text_feature = [f.text_feature for f in features]
+        all_mention_feature = [f.mention_feature for f in features]
+        all_total_feature = [f.total_feature for f in features]
+
+        dataset = DiverseDataset(args, guks, all_text_feature, all_mention_feature, all_total_feature,
+                                 contain_search_res)
+
+
     else:
         all_text_feature = [f.text_feature for f in features]
         all_mention_feature = [f.mention_feature for f in features]

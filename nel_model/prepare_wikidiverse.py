@@ -24,9 +24,11 @@ class InputExample(object):
 
 
 class InputFeatures:
-    def __init__(self, img_id, image_feature, answer):
-        self.img_id = img_id
-        self.image_feature = image_feature
+    def __init__(self, guk, text_feature, mention_feature, total_feature, answer):
+        self.guk = guk,
+        self.text_feature = text_feature,
+        self.mention_feature = mention_feature,
+        self.total_feature = total_feature,
         self.answer = answer
 
 
@@ -61,26 +63,34 @@ class Wikidiverse():
                 )
             )
 
-
         return examples
 
     def convert_examples_to_features(self, examples):
         features = []
         for (ex_index, example) in tqdm(enumerate(examples), total=len(examples), ncols=80, desc="diverse:"):
-            img_id = example.image.split(".jpg")[0]
-            answer = example.answer
+            try:
+                input_sent = example.mention + " [SEP] " + example.sent
+                sent_ids = clip_tokenize(input_sent, truncate=True).to(self.device)  # 截断过长的
+                mention = clip_tokenize(example.mention, truncate=True).to(self.device)
+                answer = example.answer
 
-            img_path = os.path.join(self.img_path, self.args.dataset, example.image)
+                img_path = os.path.join(self.img_path, "wikidiverse", example.image)
+                image = Image.open(img_path)
+                image = self.preprocess(image).unsqueeze(0).to(self.device)
 
-            image = Image.open(img_path)
-            image = self.preprocess(image).unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                image_feature = self.model.encode_image(image).to(self.device)
+                with torch.no_grad():
+                    text_feature = self.model.encode_text(sent_ids)  # text_features 1,512
+                    mention_feature = self.model.encode_text(mention)
+                    total_feature = self.model.encode_image(image).to(self.device)
 
-            features.append(
-                InputFeatures(
-                    img_id=img_id,
-                    image_feature=image_feature,
-                    answer=answer
-                ))
+                features.append(
+                    InputFeatures(
+                        guk = example.guk,
+                        text_feature = text_feature,
+                        mention_feature = mention_feature,
+                        total_feature=total_feature,
+                        answer=answer
+                    ))
+            except Exception as e:
+                print(e, example.image)
         return features

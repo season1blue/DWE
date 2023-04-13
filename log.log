@@ -5330,3 +5330,16 @@ BASELINE
 04/13 18:32:34:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
 04/13 18:33:42:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
 04/13 18:33:47:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 20:17:00:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 20:17:31:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 20:24:51:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 20:28:17:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 20:28:38:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 20:29:01:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 20:29:04:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 20:31:53:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 20:31:56:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 21:31:05:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 21:31:28:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
+04/13 21:45:31:  ========Process rank: -1, device: cuda:0£¬16-bits training: False========
+04/13 21:45:53:  Creating features ../../data/wikidiverse\cached_train_diverse at ../../data/wikidiverse
