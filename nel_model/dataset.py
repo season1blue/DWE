@@ -21,6 +21,7 @@ import h5py
 from prepare_wikipedia import Wikipedia
 from prepare_richpedia import Richpedia
 from prepare_wikiperson import Wikiperson
+from prepare_wikidiverse import Wikidiverse
 from entity import Entity
 from os.path import join, exists
 
@@ -265,6 +266,17 @@ class NELDataset(Dataset):
             # print(sample["search_res"].size())  #Bathc_size*hidden_size 32*768
         return sample
 
+
+
+
+
+
+
+
+
+
+
+
 def person_collate_train(batch):
     image_feature_list, detection_list, pos_list, neg_list = [], [], [], []
     answer_list = []
@@ -420,8 +432,13 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
         data_processor = Wikipedia()
     elif dataset == "rich":
         data_processor = Richpedia()
-    else:
+    elif dataset == "person":
         data_processor = Wikiperson()
+    elif dataset == "diverse":
+        data_processor = Wikidiverse()
+    else:
+        print("Specify the dataset name: wiki, rich, person, diverse")
+        exit()
 
     # Load data features from cache or dataset file
     cached_features_file = os.path.join(args.dir_prepro, "cached_{}_{}".format(mode, args.dataset))

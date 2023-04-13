@@ -101,7 +101,7 @@ class NELModel(nn.Module):
         # Dimension reduction
         self.pedia_out_trans = nn.Sequential(
             nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size * 4, self.output_size),
+            nn.Linear(self.hidden_size * 3, self.output_size),
         )
         self.img_att = nn.MultiheadAttention(self.hidden_size, args.nheaders, batch_first=True)
 
@@ -144,7 +144,7 @@ class NELModel(nn.Module):
         segement_att, _ = self.img_att(mention_trans, segement_trans, segement_trans)
         profile_att, _ = self.img_att(mention_trans, profile_trans, profile_trans)
 
-        query = torch.cat([text_trans, total_trans, mention_trans, profile_att], dim=-1)
+        query = torch.cat([text_trans, total_trans, mention_trans], dim=-1)
         query = self.pedia_out_trans(query).squeeze(1)
 
         coarsegraied_loss = self.clip_loss(total_trans, text_trans, batch_size)
@@ -160,7 +160,7 @@ class NELModel(nn.Module):
         # 注意这里的维度，如果不满足TripletMarginLoss的维度设置，会存在broadcast现象，导致性能大幅下降 全都要是 [bsz*hs]
         triplet_loss = self.loss(query, pos_feats.squeeze(1), neg_feats.squeeze(1))
 
-        loss = triplet_loss + coarsegraied_loss
+        loss = triplet_loss
 
         return loss, query
 
