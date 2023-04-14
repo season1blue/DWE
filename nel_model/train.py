@@ -73,7 +73,7 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, fold=""
 
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
-    if args.dataset == "person":
+    if args.dataset == "person" or "diverse":
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
     else:
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size,
@@ -175,11 +175,12 @@ def train(args, train_dataset, model, nel_model, answer_list, tokenizer, fold=""
             # }
             # bert_out = model(**bert_inputs)
 
-            if args.dataset == "person":
+            if args.dataset == "person" or "diverse":
                 nel_inputs = {
                     "model_type": args.dataset,
-                    "total": batch["image_feature"].float(),
-                    "detection": batch["detection"],
+                    "total": batch["total_feature"].float(),
+                    "text": batch["text_feature"].float(),
+                    "mention": batch["mention_feature"].float(),
                     "pos_feats": batch["pos"],
                     "neg_feats": batch["neg"]
                 }
@@ -283,7 +284,7 @@ def evaluate(args, model, nel_model, answer_list, tokenizer, mode, prefix=""):
 
     args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
     eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
-    if args.dataset == "person":
+    if args.dataset in ["person", "diverse"]:
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.train_batch_size)
     else:
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size,
@@ -308,11 +309,12 @@ def evaluate(args, model, nel_model, answer_list, tokenizer, mode, prefix=""):
                 if isinstance(batch[k], torch.Tensor):
                     batch[k] = batch[k].to(args.device)
 
-            if args.dataset == "person":
+            if args.dataset in ["person", "diverse"]:
                 nel_inputs = {
                     "model_type": args.dataset,
-                    "total": batch["image_feature"].float(),
-                    "detection": batch["detection"],
+                    "total": batch["total_feature"].float(),
+                    "text": batch["text_feature"].float(),
+                    "mention": batch["mention_feature"].float(),
                     "pos_feats": batch["pos"],
                     "neg_feats": batch["neg"]
                 }

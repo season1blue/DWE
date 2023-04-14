@@ -8,9 +8,9 @@ import json
 
 wikidiverse_path = "E:\HIRWorks\data\ImgData\wikidiverse"
 
-train_dataset_path = "E:\HIRWorks\data\wikidiverse\\clean_train.json"
-dev_dataset_path = "E:\HIRWorks\data\wikidiverse\\clean_dev.json"
-test_dataset_path = "E:\HIRWorks\data\wikidiverse\\clean_test.json"
+train_dataset_path = "E:\HIRWorks\data\wikidiverse\\train.json"
+dev_dataset_path = "E:\HIRWorks\data\wikidiverse\\dev.json"
+test_dataset_path = "E:\HIRWorks\data\wikidiverse\\test.json"
 
 train = json.load(open(train_dataset_path, "r",encoding='utf-8'))
 dev = json.load(open(dev_dataset_path, "r",encoding='utf-8'))

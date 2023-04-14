@@ -14,7 +14,7 @@ export GT_TYPE="brief"  #brief
 
 export MODE="train"
 
-export EPOCHS=300  #300
+export EPOCHS=500  #300
 export LOGGING_STEPS=565
 export SAVE_STEPS=500 #1000  # 0 represent not save
 export BATCH_SIZE=128
@@ -25,7 +25,7 @@ export DECAY=0.001
 export IMG_FEAT_SIZE=512
 export TEXT_FEAT_SIZE=512
 
-export LR=5e-5
+export LR=5e-6
 
 export NUM_ATTEN_LAYERS=2
 export NEG_SAMPLE_NUM=1

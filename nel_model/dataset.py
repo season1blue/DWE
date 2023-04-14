@@ -345,6 +345,43 @@ def person_collate_eval(batch):
     }
 
 
+def diverse_collate_eval(batch):
+    text_feature_list, mention_feature_list, total_feature_list, pos_list, neg_list = [], [], [], [], []
+    image_feature_list, detection_list, pos_list, neg_list = [], [], [], []
+    candidate_list = []
+    answer_list = []
+
+    for b in batch:
+        answer, text_feature, mention_feature, total_feature, pos, neg, candidate = b.values()
+        answer_list.append(answer)
+        text_feature_list.append(text_feature)
+        mention_feature_list.append(mention_feature)
+        total_feature_list.append(total_feature)
+        pos_list.append(pos)
+        neg_list.append(neg)
+        candidate_list.append(candidate.unsqueeze(0))
+
+    answer = torch.tensor(answer_list)
+    image_feature = torch.cat(image_feature_list, dim=0)  # [bs, hidden_size]
+    detection = torch.cat(detection_list, dim=0)  # [bs, hidden_size]
+    pos = torch.cat(pos_list, dim=0).unsqueeze(1)  # [bs, 1, hidden_size]
+    neg = torch.cat(neg_list, dim=0)  # [bs, hidden_size]
+    candidate = torch.cat(candidate_list, dim=0)
+
+    # candidate_list = pos_list
+    # random.shuffle(candidate_list)
+    # candidate = torch.cat(candidate_list, dim=0).unsqueeze(1)
+    # candidate = candidate.repeat(1, len(pos_list), 1)  # [bs, bs, hidden_size]
+
+    return {
+        "answer": answer,
+        "image_feature": image_feature,
+        "detection": detection,
+        "pos": pos,
+        "neg": neg,
+        "search_res": candidate
+    }
+
 class DiverseDataset(Dataset):
     def __init__(self, args, guks, all_text_feature, all_mention_feature, all_total_feature, all_answer_id,
                  contain_search_res):
@@ -366,27 +403,24 @@ class DiverseDataset(Dataset):
         self.entity_features = entity_feat.get("features")
 
         self.contain_search_res = contain_search_res
-        self.neg_sample_list = json.load(open(args.path_candidates, "r", encoding='utf8'))
+        self.neg_sample_list = json.load(open(join(args.dir_neg_feat, "search_top100.json"), "r", encoding='utf8'))
 
     def __len__(self):
         return len(self.all_answer_id)
 
     def __getitem__(self, idx):
         sample = dict()
-
-        print(self.guks[idx])
-        print(idx)
-        ans_qid = self.all_answer_id[idx]  # Q3290309
+        ans_qid = self.all_answer_id[idx]  # Prince Harry
         pos_sample_id = self.entity_id_mapping[ans_qid]  # 46729
         neg_sample_qids = self.neg_sample_list[ans_qid][:min(len(self.neg_sample_list[ans_qid]),
-                                                             self.max_sample_num)]  # ['Q12586851', 'Q2929059', 'Q4720236', 'Q19958130'
+                                                             self.max_sample_num)]  # ['Educational background of George W. Bush']
         neg_sample_ids = [self.entity_id_mapping[qids] for qids in
                           neg_sample_qids]  # [46729, 25088, 32776, 116770, 96808.. ] 100
 
         sample["answer_id"] = self.entity_id_mapping[self.all_answer_id[idx]]
-        sample['image_feature'] = self.all_total_feature[idx]
         sample['text_feature'] = self.all_text_feature[idx]
         sample['mention_feature'] = self.all_mention_feature[idx]
+        sample['total_feature'] = self.all_total_feature[idx]
 
         sample["pos"] = torch.tensor(np.array([self.entity_features[pos_sample_id]]))
         sample["neg"] = torch.tensor(np.array([self.entity_features[nim] for nim in neg_sample_ids]))
@@ -395,6 +429,8 @@ class DiverseDataset(Dataset):
             qids_searched = self.neg_sample_list[ans_qid]
             qids_searched_map = [pos_sample_id] + [self.entity_id_mapping[qid] for qid in qids_searched]
             sample["search_res"] = torch.tensor(np.array([self.entity_features[qsm] for qsm in qids_searched_map]))
+            sample["search_res"] = sample["search_res"][:80]  #TODO
+
         return sample
 
 
@@ -512,11 +548,12 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
         all_image_feature = [f.image_feature for f in features]
         dataset = PersonDataset(args, all_img_id, all_answer_id, all_image_feature, contain_search_res)
     elif args.dataset == "diverse":
-        all_text_feature = [f.text_feature for f in features]
-        all_mention_feature = [f.mention_feature for f in features]
-        all_total_feature = [f.total_feature for f in features]
+        all_text_feature = [f.text_feature[0] for f in features]
+        all_mention_feature = [f.mention_feature[0] for f in features]
+        all_total_feature = [f.total_feature[0] for f in features]
+        all_answer_id = [f.answer for f in features]
 
-        dataset = DiverseDataset(args, guks, all_text_feature, all_mention_feature, all_total_feature,
+        dataset = DiverseDataset(args, guks, all_text_feature, all_mention_feature, all_total_feature, all_answer_id,
                                  contain_search_res)
 
 
