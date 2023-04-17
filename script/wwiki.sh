@@ -15,12 +15,12 @@ export GT_TYPE="brief"  #brief
 export MODE="train"
 
 export EPOCHS=300  #300
-export LOGGING_STEPS=565
+export LOGGING_STEPS=4516
 export SAVE_STEPS=500 #1000  # 0 represent not save
-export BATCH_SIZE=128
-export MAX_SENT_LENGTH=32
+export BATCH_SIZE=16
 export DROPOUT=0.4
 export DECAY=0.001
+export MAX_SENT_LENGTH=32
 
 export IMG_FEAT_SIZE=512
 export TEXT_FEAT_SIZE=512

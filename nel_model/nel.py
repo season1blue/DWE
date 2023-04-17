@@ -135,7 +135,14 @@ class NELModel(nn.Module):
         # neg_feats = self.entity_trans(neg_feats)
         batch_size = mention.size(0)
 
-        if model_type in ["wiki", "rich"]:
+        if model_type in ["person", "diverse"]:
+            mention_trans = self.text_trans(mention)
+            text_trans = self.text_trans(text)
+            total_trans = self.img_trans(total)
+
+            query = torch.cat([text_trans, total_trans, mention_trans], dim=-1)
+            query = self.pedia_out_trans(query).squeeze(1)
+        else:
             mention_trans = self.text_trans(mention)
             text_trans = self.text_trans(text)
             profile_trans = self.text_trans(profile).max(dim=1)[0].unsqueeze(1)
@@ -151,13 +158,6 @@ class NELModel(nn.Module):
             coarsegraied_loss = self.clip_loss(total_trans, text_trans, batch_size)
             finegraied_loss = self.clip_loss(mention_trans, segement_att, batch_size)
 
-        else:
-            mention_trans = self.text_trans(mention)
-            text_trans = self.text_trans(text)
-            total_trans = self.img_trans(total)
-
-            query = torch.cat([text_trans, total_trans, mention_trans], dim=-1)
-            query = self.pedia_out_trans(query).squeeze(1)
 
         # ct_mention_feats = nn.functional.normalize(mention_trans.squeeze(1), dim=-1)
         # ct_segement_feats = nn.functional.normalize(segement_att.squeeze(1), dim=-1)

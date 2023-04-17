@@ -44,14 +44,14 @@ def train_collate_fn(batch):
         neg_sample_list.append(neg_sample)
 
     # TODO: in-batch negatives
-    # for i, b in enumerate(batch):
-    #     neg = None
-    #     answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
-    #     while neg is None:
-    #         rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
-    #         if rand != i:
-    #             neg = pos_sample_list[rand]
-    #     neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
+    for i, b in enumerate(batch):
+        neg = None
+        answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
+        while neg is None:
+            rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
+            if rand != i:
+                neg = pos_sample_list[rand]
+        neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
 
     max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
@@ -100,14 +100,14 @@ def eval_collate_fn(batch):
         search_res_list.append(search_res)
 
     # TODO: in-batch negatives
-    # for i, b in enumerate(batch):
-    #     neg = None
-    #     answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
-    #     while neg is None:
-    #         rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
-    #         if rand != i:
-    #             neg = pos_sample_list[rand]
-    #     neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
+    for i, b in enumerate(batch):
+        neg = None
+        answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
+        while neg is None:
+            rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
+            if rand != i:
+                neg = pos_sample_list[rand]
+        neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
 
     max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
