@@ -16,6 +16,11 @@ def parse_arg():
     parser.add_argument("--img_path", default="../../data/ImgData", type=str)
     parser.add_argument("--log_path", default="../log.log", type=str)
     parser.add_argument("--gt_type", default="property", type=str)
+    parser.add_argument("--feature_extrator", default="clip", type=str)
+
+    parser.add_argument("--lambda_c", default=1)
+
+    parser.add_argument("--lambda_t", default=10)
 
     parser.add_argument("--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets")
 

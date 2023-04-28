@@ -73,6 +73,10 @@ class NELModel(nn.Module):
         self.img_feat_size = args.img_feat_size
         self.feat_cate = args.feat_cate.lower()
 
+        self.lambda_c = args.lambda_c
+        self.lambda_t = args.lambda_t
+
+
         self.split_trans = nn.Sequential(
             nn.Linear(self.img_feat_size, self.hidden_size),
             nn.ReLU(),
@@ -101,7 +105,7 @@ class NELModel(nn.Module):
         # Dimension reduction
         self.pedia_out_trans = nn.Sequential(
             nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size * 3, self.output_size),
+            nn.Linear(self.hidden_size * 4, self.output_size),
         )
         self.img_att = nn.MultiheadAttention(self.hidden_size, args.nheaders, batch_first=True)
 
@@ -152,25 +156,24 @@ class NELModel(nn.Module):
             segement_att, _ = self.img_att(mention_trans, segement_trans, segement_trans)
             profile_att, _ = self.img_att(mention_trans, profile_trans, profile_trans)
 
-            query = torch.cat([text_trans, total_trans, mention_trans], dim=-1)
+            query = torch.cat([text_trans, total_trans, mention_trans, profile_att], dim=-1)
             query = self.pedia_out_trans(query).squeeze(1)
 
             coarsegraied_loss = self.clip_loss(total_trans, text_trans, batch_size)
-            finegraied_loss = self.clip_loss(mention_trans, segement_att, batch_size)
+            finegraied_loss = self.clip_loss(segement_att, mention_trans, batch_size)
 
-
-        # ct_mention_feats = nn.functional.normalize(mention_trans.squeeze(1), dim=-1)
-        # ct_segement_feats = nn.functional.normalize(segement_att.squeeze(1), dim=-1)
-        # ct_text_feats = nn.functional.normalize(text_trans.squeeze(1), dim=-1)
-        # ct_total_feats = nn.functional.normalize(total.squeeze(1), dim=-1)
-
-        # ct_local_loss = Contrastive_loss(ct_mention_feats, ct_segement_feats, batch_size=batch_size, temperature=0.6)
-        # ct_loss = Contrastive_loss(ct_text_feats, ct_total_feats, batch_size=batch_size, temperature=0.6)
+            # ct_mention_feats = nn.functional.normalize(mention_trans.squeeze(1), dim=-1)
+            # ct_segement_feats = nn.functional.normalize(segement_att.squeeze(1), dim=-1)
+            # ct_text_feats = nn.functional.normalize(text_trans.squeeze(1), dim=-1)
+            # ct_total_feats = nn.functional.normalize(total.squeeze(1), dim=-1)
+            #
+            # ct_local_loss = Contrastive_loss(ct_mention_feats, ct_segement_feats, batch_size=batch_size, temperature=0.6)
+            # ct_loss = Contrastive_loss(ct_text_feats, ct_total_feats, batch_size=batch_size, temperature=0.6)
 
         # 注意这里的维度，如果不满足TripletMarginLoss的维度设置，会存在broadcast现象，导致性能大幅下降 全都要是 [bsz*hs]
         triplet_loss = self.loss(query, pos_feats.squeeze(1), neg_feats.squeeze(1))
-
-        loss = triplet_loss
+        con_loss = self.lambda_c * coarsegraied_loss + finegraied_loss
+        loss = self.lambda_t * triplet_loss + con_loss
 
         return loss, query
 

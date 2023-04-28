@@ -2,20 +2,20 @@
 
 export DIR_CODE="../nel_model"
 
-export DIR_SEARCH="../data/richpedia/search_top100.json"
-export PATH_ANS="../data/richpedia/qids_ordered.json"
-export PATH_NEG_CONFIG="../data/richpedia/neg.json"
-export DIR_PREPRO="../data/richpedia"
+export DIR_SEARCH="../../data/richpedia/search_top100.json"
+export PATH_ANS="../../data/richpedia/qids_ordered.json"
+export PATH_NEG_CONFIG="../../data/richpedia/neg.json"
+export DIR_PREPRO="../../data/richpedia"
 export DATASET="rich"
-export IMG_PATH="../data/ImgData/"
+export IMG_PATH="../../data/ImgData/"
 export GT_TYPE="brief"  #brief
 
 export MODE="train"
 
 export EPOCHS=300  #300
 export LOGGING_STEPS=449
-export SAVE_STEPS=1796 #1000  # 0 represent not save
-export BATCH_SIZE=32
+export SAVE_STEPS=500 #1000  # 0 represent not save
+export BATCH_SIZE=128
 export MAX_SENT_LENGTH=32
 export DROPOUT=0.4
 export DECAY=0.001
@@ -42,7 +42,7 @@ export GPU=0
 export SEED=114514
 
 
-python $DIR_CODE/nel_train.py --dir_prepro $DIR_PREPRO \
+python $DIR_CODE/train.py --dir_prepro $DIR_PREPRO \
 --path_ans_list $PATH_ANS \
 --dir_img_feat $DIR_PREPRO \
 --dir_neg_feat $DIR_PREPRO \
@@ -79,4 +79,5 @@ python $DIR_CODE/nel_train.py --dir_prepro $DIR_PREPRO \
 --text_feat_size $TEXT_FEAT_SIZE \
 --dataset $DATASET \
 --img_path $IMG_PATH \
---gt_type $GT_TYPE
+--gt_type $GT_TYPE \
+#--overwrite_cache

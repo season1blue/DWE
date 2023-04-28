@@ -9,15 +9,16 @@ export DIR_PREPRO="../../data/wikipedia"
 export DATASET="wiki"
 export IMG_PATH="../../data/ImgData"
 export GT_TYPE="brief"  #brief
+export FEATURE_EXTRACTOR="clip"
 
 #export OVERWRITE=False
 
 export MODE="train"
 
 export EPOCHS=300  #300
-export LOGGING_STEPS=4516
+export LOGGING_STEPS=565
 export SAVE_STEPS=500 #1000  # 0 represent not save
-export BATCH_SIZE=16
+export BATCH_SIZE=128
 export DROPOUT=0.4
 export DECAY=0.001
 export MAX_SENT_LENGTH=32
@@ -84,4 +85,5 @@ python $DIR_CODE/train.py --dir_prepro $DIR_PREPRO \
 --dataset $DATASET \
 --img_path $IMG_PATH \
 --gt_type $GT_TYPE \
+--feature_extrator $FEATURE_EXTRACTOR
 #--overwrite_cache $OVERWRITE

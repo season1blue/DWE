@@ -10,6 +10,7 @@ import h5py
 import json
 import re
 import random
+from random import choice
 import numpy as np
 import os
 
@@ -22,11 +23,14 @@ from prepare_wikipedia import Wikipedia
 from prepare_richpedia import Richpedia
 from prepare_wikiperson import Wikiperson
 from prepare_wikidiverse import Wikidiverse
+
+from prepare_blip.blip_wikipedia import Wikipedia_blip
+
 from entity import Entity
 from os.path import join, exists
 
 INAME_PATTERN = re.compile("(\d+)\.")
-
+num_sample = 0
 
 def train_collate_fn(batch):
     answer_id_list, mention_feature_list, text_feature_list, segement_feature_list, total_feature_list, profile_feature_list, pos_sample_list, neg_sample_list = [], [], [], [], [], [], [], []
@@ -43,15 +47,15 @@ def train_collate_fn(batch):
         pos_sample_list.append(pos_sample)
         neg_sample_list.append(neg_sample)
 
+
     # TODO: in-batch negatives
-    for i, b in enumerate(batch):
-        neg = None
-        answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
-        while neg is None:
-            rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
-            if rand != i:
-                neg = pos_sample_list[rand]
-        neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
+    for index, b in enumerate(batch):
+        for times in range(num_sample):
+            rand = choice([i for i in range(0, len(pos_sample_list) - 1) if i != index])
+            neg = pos_sample_list[rand]
+            neg_sample_list[index] = torch.cat([neg_sample_list[index], neg], dim=0)
+
+
 
     max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
@@ -88,8 +92,6 @@ def eval_collate_fn(batch):
 
     for b in batch:
         answer_id, mention_feature, text_feature, segement_feature, total_feature, profile_feature, pos_sample, neg_sample, search_res = b.values()
-        # print(neg_sample.size())
-        # exit()
         mention_feature_list.append(mention_feature)
         text_feature_list.append(text_feature)
         segement_feature_list.append(segement_feature)
@@ -100,14 +102,12 @@ def eval_collate_fn(batch):
         search_res_list.append(search_res)
 
     # TODO: in-batch negatives
-    for i, b in enumerate(batch):
-        neg = None
-        answer_id, mention_feature, text_feature, segement_feature, total_feature, pos_sample, neg_sample = b.values()
-        while neg is None:
-            rand = random.randint(0, len(pos_sample_list) - 1)  # randint [0,x] 闭区间
-            if rand != i:
-                neg = pos_sample_list[rand]
-        neg_sample_list[i] = torch.cat([neg_sample_list[i], neg], dim=0)
+    for index, b in enumerate(batch):
+        for times in range(num_sample):
+            rand = choice([i for i in range(0, len(pos_sample_list) - 1) if i != index])
+            neg = pos_sample_list[rand]
+            neg_sample_list[index] = torch.cat([neg_sample_list[index], neg], dim=0)
+
 
     max_size = max([imf.size(0) for imf in segement_feature_list])  # img_feature.size == (n, 512)
 
@@ -219,7 +219,10 @@ class NELDataset(Dataset):
         self.neg_mapping = {sample: i for i, sample in enumerate(self.neg_list)}
         self.ansid2negid = {i: self.neg_mapping[ans] for i, ans in enumerate(self.answer_list)}
 
-        gt_name = "gt_feats_{}.h5".format(args.gt_type)
+        if args.feature_extrator == "blip":
+            gt_name = "text_entity_blip.h5"
+        else:
+            gt_name = "gt_feats_{}.h5".format(args.gt_type)
         entity_feat = h5py.File(join(args.dir_neg_feat, gt_name), 'r')
         self.entity_features = entity_feat.get("features")
 
@@ -507,24 +510,29 @@ class PersonDataset(Dataset):
 
 
 def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", logger=None):
-    if dataset == "wiki":
-        data_processor = Wikipedia()
-    elif dataset == "rich":
-        data_processor = Richpedia()
-    elif dataset == "person":
-        data_processor = Wikiperson()
-    elif dataset == "diverse":
-        data_processor = Wikidiverse()
+    data_processor = None
+    if args.feature_extrator == "blip":
+        if dataset == "wiki":
+            data_processor = Wikipedia_blip()
+
+    elif args.feature_extrator == "clip":
+        if dataset == "wiki":
+            data_processor = Wikipedia()
+        elif dataset == "rich":
+            data_processor = Richpedia()
+        elif dataset == "person":
+            data_processor = Wikiperson()
+        elif dataset == "diverse":
+            data_processor = Wikidiverse()
     else:
         print("Specify the dataset name: wiki, rich, person, diverse")
         exit()
 
     # Load data features from cache or dataset file
-    cached_features_file = os.path.join(args.dir_prepro, "cached_{}_{}".format(mode, args.dataset))
+    cached_features_file = os.path.join(args.dir_prepro, "cached_{}_{}_{}".format(mode, args.dataset, args.feature_extrator))
     # entity_features_file = os.path.join(args.dir_prepro, "entity_{}".format(args.dataset))
 
     guks = []
-
     if mode != 'test' and os.path.exists(cached_features_file) and not args.overwrite_cache:
         features = torch.load(cached_features_file)
     else:
@@ -558,6 +566,7 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
 
 
     else:
+
         all_text_feature = [f.text_feature for f in features]
         all_mention_feature = [f.mention_feature for f in features]
         all_total_feature = [f.total_feature for f in features]

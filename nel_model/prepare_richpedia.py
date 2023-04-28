@@ -32,16 +32,17 @@ class InputExample(object):
 class InputFeatures:
     """A single training/test example for token classification."""
 
-    def __init__(self, answer_id, img_id, mentions, key_id, text_feature, image_feature, mention_feature,
-                 total_image_feature):
+    def __init__(self, answer_id, img_id, mentions, key_id, text_feature, total_feature, mention_feature,
+                 segement_feature, profile_feature):
         self.answer_id = answer_id
         self.img_id = img_id
         self.mentions = mentions
         self.key_id = key_id
         self.text_feature = text_feature
-        self.image_feature = image_feature
+        self.total_feature = total_feature
         self.mention_feature = mention_feature
-        self.total_image_feature = total_image_feature
+        self.segement_feature=segement_feature
+        self.profile_feature=profile_feature
 
 
 class Richpedia():
@@ -116,12 +117,11 @@ class Richpedia():
     def convert_examples_to_features(self, examples):
         features = []
         for (ex_index, example) in tqdm(enumerate(examples), total=len(examples), ncols=80):
-
             # Text
             input_sent = example.mentions + " [SEP] " + example.sent
-            sent_ids, _ = clip_tokenize(input_sent, truncate=True)  # 截断过长的
+            sent_ids = clip_tokenize(input_sent, truncate=True)  # 截断过长的
             sent_ids = sent_ids.to(self.device)
-            mention, _ = clip_tokenize(example.mentions, truncate=True)
+            mention = clip_tokenize(example.mentions, truncate=True)
             mention = mention.to(self.device)
             with torch.no_grad():
                 self.model.to(self.device)
@@ -129,22 +129,25 @@ class Richpedia():
                 mention_feature = self.model.encode_text(mention).to(self.device)
 
             # Image
-            image_features = []
+            image_features_list = []
             with torch.no_grad():
                 for img_name in example.img_list:
-                    img_path = os.path.join(self.img_path, img_name)
-                    image = Image.open(img_path)
-                    image = self.preprocess(image)
-                    image = image.unsqueeze(0).to(self.device)
-                    split_feature = self.model.encode_image(image).to(self.device)
-                    image_features.append(split_feature)
-
-                if len(image_features) == 0:
+                    try:
+                        img_path = os.path.join(self.img_path, "richpedia", "images", img_name)
+                        image = Image.open(img_path)
+                        image = self.preprocess(image)
+                        image = image.unsqueeze(0).to(self.device)
+                        split_feature = self.model.encode_image(image).to(self.device)
+                        image_features_list.append(split_feature)
+                    except:
+                        pass
+                if len(image_features_list) == 0:
                     image_features = torch.zeros(1, 512).to(self.device)
                 else:
-                    image_features = torch.cat(image_features, dim=0).to(self.device)
+                    image_features = torch.cat(image_features_list, dim=0).to(self.device)
 
-            total_image_feature = torch.sum(image_features, dim=0).unsqueeze(0).to(self.device)  # 1, 512
+            total_feature = torch.sum(image_features, dim=0).unsqueeze(0).to(self.device)  # 1, 512
+            profile_features = torch.zeros_like(image_features).to(self.device)
 
 
             if example.answer:
@@ -152,10 +155,6 @@ class Richpedia():
             else:
                 answer_id = -1
 
-            if ex_index < 5:
-                logger.info("*** Example ***")
-                logger.info("guid: %s", example.guk)
-                logger.info("answer_id: %s", answer_id)
 
             features.append(
                 InputFeatures(
@@ -164,9 +163,10 @@ class Richpedia():
                     mentions=example.mentions,
                     key_id=example.guk,
                     text_feature=text_feature,
-                    image_feature=image_features,
                     mention_feature=mention_feature,
-                    total_image_feature=total_image_feature
+                    total_feature=total_feature,
+                    segement_feature=image_features,
+                    profile_feature=profile_features
                 )
             )
         return features
