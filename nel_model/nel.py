@@ -105,9 +105,10 @@ class NELModel(nn.Module):
         # Dimension reduction
         self.pedia_out_trans = nn.Sequential(
             nn.Dropout(self.dropout),
-            nn.Linear(self.hidden_size * 4, self.output_size),
+            nn.Linear(self.hidden_size, self.output_size),
         )
         self.img_att = nn.MultiheadAttention(self.hidden_size, args.nheaders, batch_first=True)
+        self.text_att = nn.MultiheadAttention(self.hidden_size, args.nheaders, batch_first=True)
 
         # circle loss
         self.loss_function = args.loss_function
@@ -148,19 +149,21 @@ class NELModel(nn.Module):
             query = self.pedia_out_trans(query).squeeze(1)
         else:
             mention_trans = self.text_trans(mention)
-            text_trans = self.text_trans(text)
-            profile_trans = self.text_trans(profile).max(dim=1)[0].unsqueeze(1)
+            text_trans = self.text_trans(text) 
+            # profile_trans = self.text_trans(profile).max(dim=1)[0].unsqueeze(1)
             segement_trans = self.img_trans(segement)
             total_trans = self.img_trans(total)
 
-            segement_att, _ = self.img_att(mention_trans, segement_trans, segement_trans)
-            profile_att, _ = self.img_att(mention_trans, profile_trans, profile_trans)
+            vision_att, _ = self.img_att(mention_trans, segement_trans, segement_trans)
+            text_att, _ = self.img_att(mention_trans, text_trans, text_trans)
 
-            query = torch.cat([text_trans, total_trans, mention_trans, profile_att], dim=-1)
+
+            # query = torch.cat([text_trans, total_trans, mention_trans, profile_att], dim=-1)
+            query = mention_trans + vision_att + text_att
             query = self.pedia_out_trans(query).squeeze(1)
 
             coarsegraied_loss = self.clip_loss(total_trans, text_trans, batch_size)
-            finegraied_loss = self.clip_loss(segement_att, mention_trans, batch_size)
+            finegraied_loss = self.clip_loss(vision_att, text_att, batch_size)
 
             # ct_mention_feats = nn.functional.normalize(mention_trans.squeeze(1), dim=-1)
             # ct_segement_feats = nn.functional.normalize(segement_att.squeeze(1), dim=-1)

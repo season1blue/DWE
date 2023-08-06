@@ -8,7 +8,7 @@ export PATH_NEG_CONFIG="../../data/wikipedia/neg.json"
 export DIR_PREPRO="../../data/wikipedia"
 export DATASET="wiki"
 export IMG_PATH="../../data/ImgData"
-export GT_TYPE="brief"  #brief
+export GT_TYPE="property"  #brief
 export FEATURE_EXTRACTOR="clip"
 
 #export OVERWRITE=False

@@ -23,7 +23,7 @@ export DECAY=0.001
 export IMG_FEAT_SIZE=512
 export TEXT_FEAT_SIZE=512
 
-export LR=5e-5
+export LR=5e-4
 
 export NUM_ATTEN_LAYERS=2
 export NEG_SAMPLE_NUM=1

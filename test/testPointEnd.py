@@ -7,13 +7,13 @@ import sys
 from tqdm import tqdm
 import os
 
-img_name = "509.jpeg"
+img_name = "41487.jpg"
 img_id = img_name.split(".")[0]
 
 ins = instanceSegmentation()
 ins.load_model("../../data/pretrain_models/pointrend_resnet50.pkl")
 target_classes = ins.select_target_classes(person=True)
-r, output = ins.segmentImage(img_name, show_bboxes=True, extract_segmented_objects=True, segment_target_classes = target_classes, save_extracted_objects=True, output_image_name=None, output_path="seg_result")
+r, output = ins.segmentImage(img_name, show_bboxes=True, extract_segmented_objects=True, segment_target_classes = target_classes, save_extracted_objects=True, output_image_name=None, output_path="seg_result", img_id='41487')
 # print(r['extracted_objects'])
 # print(r["object_counts"])
 

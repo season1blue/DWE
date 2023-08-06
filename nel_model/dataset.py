@@ -511,19 +511,19 @@ class PersonDataset(Dataset):
 
 def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", logger=None):
     data_processor = None
-    if args.feature_extrator == "blip":
-        if dataset == "wiki":
-            data_processor = Wikipedia_blip()
+    # if args.feature_extrator == "blip":
+    #     if dataset == "wiki":
+    #         data_processor = Wikipedia_blip()
 
-    elif args.feature_extrator == "clip":
-        if dataset == "wiki":
-            data_processor = Wikipedia()
-        elif dataset == "rich":
-            data_processor = Richpedia()
-        elif dataset == "person":
-            data_processor = Wikiperson()
-        elif dataset == "diverse":
-            data_processor = Wikidiverse()
+    # elif args.feature_extrator == "clip":
+    if dataset == "wiki":
+        data_processor = Wikipedia()
+    elif dataset == "rich":
+        data_processor = Richpedia()
+    elif dataset == "person":
+        data_processor = Wikiperson()
+    elif dataset == "diverse":
+        data_processor = Wikidiverse()
     else:
         print("Specify the dataset name: wiki, rich, person, diverse")
         exit()
@@ -539,7 +539,10 @@ def load_and_cache_examples(args, tokenizer, answer_list, mode, dataset="wiki", 
         logger.info("Creating features %s at %s" % (cached_features_file, args.dir_prepro))
 
         examples = data_processor.read_examples_from_file(args.dir_prepro, mode)
-        features = data_processor.convert_examples_to_features(examples)
+        if args.feature_extrator != "clip":
+            features = data_processor.convert_examples_to_features_textmodel(examples)
+        else:
+            features = data_processor.convert_examples_to_features(examples)
 
         guks = [ex.guk for ex in examples]
 
