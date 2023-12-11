@@ -1,1 +1,2 @@
-使用deepface提取profile侧写。文件主要写在app.py中
+Implementation of Paper "A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking"
+The paper is accepted by AAAI-24.
