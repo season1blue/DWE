@@ -1,10 +1,4 @@
-Implementation of Paper ""
-
-
-Dataset
-Download link: 
-
-
+ 
 # A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking
 
 
@@ -30,7 +24,7 @@ If you have any question, please feel free to contact me by e-mail: betterszsong
 ## :rocket: Architecture
 
 
-<p align="center" width="60%"><img src="images/Architecture.png" alt="GEMEL" style="width: 100%;  display: block; margin: auto;"></p>
+<p align="center" width="60%"><img src="model.pdf" alt="DWE" style="width: 100%;  display: block; margin: auto;"></p>
 
 
 ## :rotating_light: Usage
