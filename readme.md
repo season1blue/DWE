@@ -24,7 +24,7 @@ If you have any question, please feel free to contact me by e-mail: betterszsong
 ## :rocket: Architecture
 
 
-<p align="center" width="60%"><img src="model.pdf" alt="DWE" style="width: 100%;  display: block; margin: auto;"></p>
+<p align="center" width="60%"><img src="model.png" alt="DWE" style="width: 100%;  display: block; margin: auto;"></p>
 
 
 ## :rotating_light: Usage
