@@ -5,7 +5,7 @@
 
 ## :sparkles: Overview
 
-This repository contains official implementation of our paper [A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking](XX).
+This repository contains official implementation of our paper [A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking](https://arxiv.org/pdf/2312.11816.pdf).
 
 Multimodal Entity Linking (MEL) aims at linking ambiguous mentions with multimodal information to entity in Knowledge Graph (KG) such as Wikipedia, which plays a key role in many applications. However, existing methods suffer from shortcomings, including modality impurity such as noise in raw image and ambiguous textual entity representation, which puts obstacles to MEL. We formulate multimodal entity linking as a neural text matching problem where each multimodal information (text and image) is treated as a query, and the model learns the mapping from each query to the relevant entity from candidate entities. This paper introduces a dual-way enhanced (DWE) framework for MEL: (1) our model refines queries with multimodal data and addresses semantic gaps using cross-modal enhancers between text and image information. Besides, DWE innovatively leverages fine-grained image attributes, including facial characteristic and scene feature, to enhance and refine visual features.
     (2)By using Wikipedia descriptions, DWE enriches entity semantics and obtains more comprehensive textual representation, which reduces between textual representation and the entities in KG. Extensive experiments on three public benchmarks demonstrate that our method achieves state-of-the-art (SOTA) performance, indicating the superiority of our model.
@@ -77,7 +77,14 @@ sh person.sh
 
 ## Citation
 ```
-TBD
+@misc{song2023dualway,
+      title={A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking}, 
+      author={Shezheng Song and Shan Zhao and Chengyu Wang and Tianwei Yan and Shasha Li and Xiaoguang Mao and Meng Wang},
+      year={2023},
+      eprint={2312.11816},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI}
+}
 ```
 ## License
 This repository respects to Apache license 2.0.
