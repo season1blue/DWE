@@ -40,6 +40,27 @@ pip install -r req.txt
 
 ### Data
 We have preprocessed the text, image, and knowledge base data. Download data from [here](https://drive.google.com/drive/folders/1Gd9ykKgFmXl0_hkNTGk2DUdVhcIpJjV5?usp=drive_link) and move to the `./data` folder.
+Image Data is obtained by https://pan.baidu.com/s/1WbIfj3nAJAmFoHWSOxgcog, extract code: 1111. (Thanks for the download link provided from https://github.com/seukgcode/MEL-GHMFC/tree/main/datasets).
+Put the image at data/ImgData
+
+The directory tree is:
+├─ImgData
+│  ├─richpedia
+│  │  ├─images
+│  │  └─old
+│  ├─wikidiverse
+│  └─wikipedia
+├─richpedia
+│  ├─rich_detection
+│  └─rich_segement
+├─wikidiverse
+│  ├─dataset
+│  │  └─cands
+│  ├─entity
+│  └─utils
+└─wikipedia
+    ├─wiki_detection
+    └─wiki_segement
 
 ```
 train.json, dev.json, test.json         ->      textual data files
