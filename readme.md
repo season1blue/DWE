@@ -10,9 +10,6 @@ This repository contains official implementation of our paper [A Dual-way Enhanc
 Multimodal Entity Linking (MEL) aims at linking ambiguous mentions with multimodal information to entity in Knowledge Graph (KG) such as Wikipedia, which plays a key role in many applications. However, existing methods suffer from shortcomings, including modality impurity such as noise in raw image and ambiguous textual entity representation, which puts obstacles to MEL. We formulate multimodal entity linking as a neural text matching problem where each multimodal information (text and image) is treated as a query, and the model learns the mapping from each query to the relevant entity from candidate entities. This paper introduces a dual-way enhanced (DWE) framework for MEL: (1) our model refines queries with multimodal data and addresses semantic gaps using cross-modal enhancers between text and image information. Besides, DWE innovatively leverages fine-grained image attributes, including facial characteristic and scene feature, to enhance and refine visual features.
     (2)By using Wikipedia descriptions, DWE enriches entity semantics and obtains more comprehensive textual representation, which reduces between textual representation and the entities in KG. Extensive experiments on three public benchmarks demonstrate that our method achieves state-of-the-art (SOTA) performance, indicating the superiority of our model.
   
-Dataset: two well-established MEL datasets, namely [WikiDiverse](https://arxiv.org/abs/2204.06347) and [WikiMEL](https://dl.acm.org/doi/abs/10.1145/3477495.3531867)
-
-Checkpoint and preprocessed data can be accessed [here](https://drive.google.com/drive/folders/1Gd9ykKgFmXl0_hkNTGk2DUdVhcIpJjV5?usp=drive_link).
 
 If you have any question, please feel free to contact me by e-mail: betterszsong@gmail.com or submit your issue in the repository.
 
@@ -39,11 +36,15 @@ pip install -r req.txt
  
 
 ### Data
-We have preprocessed the text, image, and knowledge base data. Download data from [here](https://drive.google.com/drive/folders/1Gd9ykKgFmXl0_hkNTGk2DUdVhcIpJjV5?usp=drive_link) and move to the `./data` folder.
-Image Data is obtained by https://pan.baidu.com/s/1WbIfj3nAJAmFoHWSOxgcog, extract code: 1111. (Thanks for the download link provided from https://github.com/seukgcode/MEL-GHMFC/tree/main/datasets).
-Put the image at data/ImgData
 
+Dataset: two well-established MEL datasets, namely [WikiDiverse](https://arxiv.org/abs/2204.06347) and [WikiMEL](https://dl.acm.org/doi/abs/10.1145/3477495.3531867)
+
+Checkpoint and preprocessed data can be accessed [here](https://drive.google.com/drive/folders/1Gd9ykKgFmXl0_hkNTGk2DUdVhcIpJjV5?usp=drive_link), and move to the `./data` folder.
+
+Put the image at data/ImgData. Image Data is obtained by [here](https://pan.baidu.com/s/1WbIfj3nAJAmFoHWSOxgcog) and the extract code is 1111. (Thanks for the download link provided from [GHMFC](https://drive.google.com/drive/folders/1Gd9ykKgFmXl0_hkNTGk2DUdVhcIpJjV5?usp=drive_link](https://github.com/seukgcode/MEL-GHMFC/tree/main/datasets))
+ 
 The directory tree is:
+```
 ├─ImgData
 │  ├─richpedia
 │  │  ├─images
@@ -61,6 +62,7 @@ The directory tree is:
 └─wikipedia
     ├─wiki_detection
     └─wiki_segement
+```
 
 ```
 train.json, dev.json, test.json         ->      textual data files
