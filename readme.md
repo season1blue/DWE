@@ -100,13 +100,15 @@ sh person.sh
 
 ## Citation
 ```
-@misc{song2023dualway,
-      title={A Dual-way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking}, 
-      author={Shezheng Song and Shan Zhao and Chengyu Wang and Tianwei Yan and Shasha Li and Xiaoguang Mao and Meng Wang},
-      year={2023},
-      eprint={2312.11816},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI}
+@article{song2023dualway,
+author = {Song, Shezheng and Zhao, Shan and Wang, Chengyu and Yan, Tianwei and Li, Shasha and Mao, Xiaoguang and Wang, Meng},
+year = {2024},
+month = {03},
+pages = {19008-19016},
+title = {A Dual-Way Enhanced Framework from Text Matching Point of View for Multimodal Entity Linking},
+volume = {38},
+journal = {Proceedings of the AAAI Conference on Artificial Intelligence},
+doi = {10.1609/aaai.v38i17.29867}
 }
 ```
 ## License
